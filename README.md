@@ -1,18 +1,18 @@
 # MatchingResearchers
-Prototyping ways to promote interdisciplinary research through author matchiing
+Prototyping ways to promote interdisciplinary research through author matching.
 
 The project uses Duke Scholars’ data to build a model that provides pair matching for successful interdisciplinary research, and to draft a proposal for the design of experiments once the matching model is finished.
 
 
 ## Data Source
-"Scholars@Duke is a research discovery system featuring the research, scholarship and activities of Duke faculty, graduate students, and academic staff."
+"Scholars@Duke is a research discovery system featuring the research, scholarship, and activities of Duke faculty, graduate students, and academic staff."
 
 [https://scholars.duke.edu/](https://scholars.duke.edu/)
 
 Duke Scholars GraphQL API
 https://oit.duke.edu/service/streamer/
 
-## Two Modeling Approachs
+## Two Modeling Approaches
 ### Observational Network Analysis Team:
 This team will focus on cleaning and feature engineering the data, studying the network, and observing factors that may lead to successful interdisciplinary research.
 
