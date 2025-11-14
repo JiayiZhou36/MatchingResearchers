@@ -1,7 +1,6 @@
 # MatchingResearchers
 Prototyping ways to promote interdisciplinary research through author matchiing
 
-## Summary
 The project uses Duke Scholars’ data to build a model that provides pair matching for successful interdisciplinary research, and to draft a proposal for the design of experiments once the matching model is finished.
 
 
@@ -22,13 +21,17 @@ We plan to use data from individuals, including information on citations, co-aut
 From studying the abstracts, each person can have their own embedding space. We can tokenize text chunks, calculate word frequencies, or use methods such as PCA or cosine similarity to analyze relationships between people in the network. Once the data is cleaned and processed, we can utilize social network analysis to identify communities, cluster faculty members, and predict potential connections based on the network model.
 
 ### Machine Learning Team:
-This team will also focus on data cleaning and feature engineering, using features such as the frequency of interdisciplinary collaboration and citation counts. A predictive model will be designed and trained to study the factors that lead to successful interdisciplinary research. Based on this model, we can estimate the likelihood of collaboration and develop a matching tool to suggest potential researcher pairs in interdisciplinary fields.
+This team will also focus on data cleaning and feature engineering, using features such as the frequency of interdisciplinary collaboration and citation counts. 
+
+A predictive model will be designed and trained to study the factors that lead to successful interdisciplinary research. Based on this model, we can estimate the likelihood of collaboration and develop a matching tool to suggest potential researcher pairs in interdisciplinary fields.
 Once both teams have reached their results, a research proposal for the experimental design will 
 
+Once both teams have reached their results, a research proposal for the experimental design will be drafted, with the potential to eventually move on to platform development.
 
 ## GraphQL Query
 [Link to Duke GraphQL workspace](https://graphql.scholars.duke.edu/graphiql)
-'''
+
+```
 query PeopleWithTheirPublications {
   people(pageSize: 50, startPage: 1) {
     count
@@ -59,4 +62,4 @@ query PeopleWithTheirPublications {
     }
     }}
 }
-'''
+```
