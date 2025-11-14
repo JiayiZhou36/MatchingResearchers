@@ -13,6 +13,8 @@ Duke Scholars GraphQL API
 https://oit.duke.edu/service/streamer/
 
 ## Two Modeling Approaches
+Once both teams have reached their results, a research proposal for the experimental design will be drafted, with the potential to proceed on to platform development.
+
 ### Observational Network Analysis Team:
 This team will focus on cleaning and feature engineering the data, studying the network, and observing factors that may lead to successful interdisciplinary research.
 
@@ -24,9 +26,7 @@ From studying the abstracts, each person can have their own embedding space. We 
 This team will also focus on data cleaning and feature engineering, using features such as the frequency of interdisciplinary collaboration and citation counts. 
 
 A predictive model will be designed and trained to study the factors that lead to successful interdisciplinary research. Based on this model, we can estimate the likelihood of collaboration and develop a matching tool to suggest potential researcher pairs in interdisciplinary fields.
-Once both teams have reached their results, a research proposal for the experimental design will 
 
-Once both teams have reached their results, a research proposal for the experimental design will be drafted, with the potential to eventually move on to platform development.
 
 ## GraphQL Query
 [Link to Duke GraphQL workspace](https://graphql.scholars.duke.edu/graphiql)
