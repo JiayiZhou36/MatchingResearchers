@@ -1,0 +1,82 @@
+git---
+title: "CSS Project"
+format: html
+---
+
+Loading packages
+
+```{r}
+library(tidyverse)
+library(igraph)
+library(ggraph)
+library(here)
+```
+
+Creating a network from an adjacency matrix of similarity scores
+
+```{r}
+#loading adjacency matrix of similarity scores
+similarity_data <- read.csv(here("data/professor_similarity_matrix.csv"))
+
+#creating a code from names to numbers
+name_code <- setNames(similarity_data$X, 1:nrow(similarity_data))
+
+#creating adjacency matrix
+similarity_data <- similarity_data %>% 
+  select(-X) #removing name column
+adjacency_matrix <- as.matrix(similarity_data)
+#removing self-loops
+diag(adjacency_matrix) <- 0
+
+#Creating network
+network <- graph_from_adjacency_matrix(adjacency_matrix, weighted = TRUE)
+```
+
+Weights
+
+```{r}
+#checking weights
+E(network)$weight
+
+#setting proximity threshold (based on sum of edge density over number of edges, so mean density)
+proximity_threshold <- (sum(E(network)$weight)/ecount(network))
+  
+#modifying the network to only have ties above the mean
+network_modified <- delete_edges(network, E(network)[weight < proximity_threshold])
+
+E(network_modified)$weight
+
+#checking degrees
+degree(network_modified)
+
+#check the given connections of a researcher X
+neighbors(network_modified, v = "bill.adair")
+
+#preliminary visualization
+ggraph(network_modified, layout = "stress") +
+  geom_edge_link() +
+  geom_node_point()
+```
+
+Paths or walks (of length 2)
+
+```{r}
+nodes <- V(network_modified)$name
+
+all_paths <- list()
+
+for (node in nodes) {
+  paths <- all_simple_paths(network_modified, node, cutoff = 2)
+  end_nodes <- character(0)
+  for (path in paths) {
+    path_names <- V(network_modified)$name[as.numeric(path)]
+    end_nodes <- c(end_nodes, tail(path_names, 1))
+    end_nodes <- unique(end_nodes)
+    }
+  all_paths[[node]] <- end_nodes
+}
+```
+
+Once this list of end nodes is created, need to decide what the optimal collaboration threshold of similarity is
+- Is path length of 2 best?
+- What should the collaboration threshold be? It should be under the similarity threshold but over another amount. - Is the edge matching threshold too low?
