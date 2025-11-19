@@ -1,0 +1,17 @@
+# Interdisciplinary Matching Project Timeline
+
+## Phase 1: Data Gathering (Nov, 21, 2023 - Nov, 25, 2025)
+- [ ] Unchecked checkbox
+
+
+## Phase 2: Data Cleaning (Nov, 21, 2023 - Nov, 25, 2025)
+- [ ] Unchecked checkbox
+
+## Phase 3: Analysis (Nov, 21, 2023 - Nov, 25, 2025)
+- [ ] Unchecked checkbox
+
+## Phase 4: Drafting Paper (Nov, 21, 2023 - Nov, 25, 2025)
+- [ ] Unchecked checkbox
+
+## Phase 5: Finalized Paper (Due December 10th)
+- [ ] Unchecked checkbox
