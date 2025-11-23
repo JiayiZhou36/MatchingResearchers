@@ -7,7 +7,7 @@
 - [ ] Updated dataset following meeting w/ data librarian Nov 25th (Gabe)
 
 ## Phase 2: Data Cleaning (Nov, 21, 2023 - Nov, 25, 2025)
-- [x] Design data structure by Nov 23 (Jingyi)
+- [x] Design data structure by Nov 23 (Jingyi), created three tables. 
 
 ## Phase 3: Analysis (Nov, 21, 2023 - Nov, 25, 2025)
 - [ ] Unchecked checkbox
