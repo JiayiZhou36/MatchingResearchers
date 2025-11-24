@@ -16,7 +16,7 @@ print(API_TOKEN)
 GRAPHQL_ENDPOINT = "https://graphql.scholars.duke.edu/graphiql"
 HEADERS = {
     "Content-Type": "application/json",
-    "scholars_access_token": f"{API_TOKEN}",
+    
 }
 
     
@@ -25,13 +25,14 @@ HEADERS = {
 TOTAL_PAGES = 116 #known from graphQL query on the scholars platform
 
 QUERY = """
-query PeopleWithTheirPublications($pageNumber: Int!) {
-  people(pageSize: 100, startPage: $pageNumber) {
+query PeopleWithTheirPublications {
+  people (
+    pageSize: 100, startPage: 1) {
     count
-    pagingInfo {
-      totalPages
-      pageNumber
-    }
+     pagingInfo {
+ totalPages
+ pageNumber
+ }
     results {
       firstName
       lastName
@@ -40,14 +41,22 @@ query PeopleWithTheirPublications($pageNumber: Int!) {
       currentResearch {
         id
       }
-      primaryAppointment {
+      
+      primaryAppointment{
         title
       }
-      publications(pageSize: 1000, startPage: 1) {
+      
+
+      publications(
+        pageSize: 1000 , startPage: 1) {
         count
         results {
           id
-          publication {
+          publication{
+            publicationDate {
+              date
+
+            }
             title
             doi
             abstract
@@ -55,10 +64,9 @@ query PeopleWithTheirPublications($pageNumber: Int!) {
               fullList
             }
           }
-        }
       }
     }
-  }
+    }}
 }
 """
 
