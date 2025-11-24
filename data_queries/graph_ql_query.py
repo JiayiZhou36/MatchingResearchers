@@ -43,7 +43,7 @@ query PeopleWithTheirPublications($pageNumber: Int!) {
       primaryAppointment {
         title
       }
-      publications(pageSize: 2000, startPage: 1) {
+      publications(pageSize: 1000, startPage: 1) {
         count
         results {
           id
@@ -51,13 +51,6 @@ query PeopleWithTheirPublications($pageNumber: Int!) {
             title
             doi
             abstract
-            publicationDate{
-                date
-            }
-              year
-              month
-              day
-            }
             allAuthors {
               fullList
             }
