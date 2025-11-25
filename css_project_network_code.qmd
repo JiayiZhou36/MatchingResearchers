@@ -10,27 +10,28 @@ library(tidyverse)
 library(igraph)
 library(ggraph)
 library(here)
+library(ideanet)
 ```
 
 Creating a network from an adjacency matrix of similarity scores
 
 ```{r}
 #loading adjacency matrix of similarity scores
-similarity_data <- read.csv(here("data/professor_similarity_matrix.csv"))
-
-#creating a code from names to numbers
-name_code <- setNames(similarity_data$X, 1:nrow(similarity_data))
+similarity_data <- read.csv(here("Code/professor_similarity_matrix.csv"), row.names = 1)
 
 #creating adjacency matrix
-similarity_data <- similarity_data %>% 
-  select(-X) #removing name column
 adjacency_matrix <- as.matrix(similarity_data)
+
 #removing self-loops
 diag(adjacency_matrix) <- 0
 
+isSymmetric(adjacency_matrix)
+
 #Creating network
-network <- graph_from_adjacency_matrix(adjacency_matrix, weighted = TRUE)
+network <- graph_from_adjacency_matrix(adjacency_matrix, weighted = TRUE, mode = "undirected")
 ```
+
+
 
 Weights
 
@@ -45,15 +46,33 @@ proximity_threshold <- (sum(E(network)$weight)/ecount(network))
 network_modified <- delete_edges(network, E(network)[weight < proximity_threshold])
 
 E(network_modified)$weight
+gsize(network_modified)
 
 #checking degrees
 degree(network_modified)
 
 #check the given connections of a researcher X
 neighbors(network_modified, v = "bill.adair")
+```
 
+Clustering
+
+```{r}
+partitions <- get_partitions(network_modified)
+
+#needs to be assigned to the same object as the partitions object
+partitions <- CHAMP(network_modified, partitions)
+
+partitions <- get_CHAMP_map(network_modified, partitions)
+
+#set resolution manually based on partitions object
+network_clustered <- cluster_louvain(network_modified, resolution = 0.63) 
+```
+
+
+```{r}
 #preliminary visualization
-ggraph(network_modified, layout = "stress") +
+ggraph(network_clustered, layout = "stress") +
   geom_edge_link() +
   geom_node_point()
 ```
@@ -80,3 +99,4 @@ for (node in nodes) {
 Once this list of end nodes is created, need to decide what the optimal collaboration threshold of similarity is
 - Is path length of 2 best?
 - What should the collaboration threshold be? It should be under the similarity threshold but over another amount. - Is the edge matching threshold too low?
+
