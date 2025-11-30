@@ -121,27 +121,28 @@ mean(degree(network_graph_modified))
 # 
 # is.connected(network_graph_modified)
 
-resolutions <- seq(0.1, 4, by = 0.1)
-communities_test <- c()
-modularities <- c()
+# resolutions <- seq(0.1, 4, by = 0.1)
+# communities_test <- c()
+# modularities <- c()
+# 
+# for(resolution in resolutions) {
+#   lc_test <- cluster_louvain(network_graph_modified,
+#                              weights = network_graph_modified %>% activate(edges) %>% pull(weight), 
+#                              resolution = resolution)
+#   modularity <- modularity(lc_test)
+#   modularities <- c(modularities, modularity)
+#   no_com <- max(lc_test$membership)
+#   communities_test <- c(communities_test, no_com)
+# }
+# 
+# plot(resolutions, communities_test)
+# plot(resolution, modularities)
 
-for(resolution in resolutions) {
-  lc_test <- cluster_louvain(network_graph_modified,
-                             weights = network_graph_modified %>% activate(edges) %>% pull(weight), 
-                             resolution = resolution)
-  modularity <- modularity(lc_test)
-  modularities <- c(modularities, modularity)
-  no_com <- max(lc_test$membership)
-  communities_test <- c(communities_test, no_com)
-}
-
-plot(resolutions, communities_test)
-plot(resolution, modularities)
-
-network_clusters <- cluster_louvain(network_graph_modified, resolution = 3)
+network_clusters <- cluster_louvain(network_graph_modified,
+                                    weights = network_graph_modified %>% activate(edges) %>% pull(weight),
+                                    resolution = 3)
 print(network_clusters)
 modularity(network_clusters)
-
 
 #assigning membership based on clusters
 network_graph_modified <- network_graph_modified %>%
@@ -149,8 +150,7 @@ network_graph_modified <- network_graph_modified %>%
   mutate(membership = membership(network_clusters))
 ```
 
-
-Clustering
+Clustering (see above)
 
 ```{r}
 # partitions <- get_partitions(network_modified)
@@ -161,10 +161,10 @@ Clustering
 # partitions <- get_CHAMP_map(network_modified, partitions)
 
 #set resolution manually based on partitions object
-network_clusters <- cluster_louvain(network_modified, resolution = 0.63) 
-
-#assigning membership based on clusters
-V(network_modified)$community <- membership(network_clusters)
+# network_clusters <- cluster_louvain(network_modified, resolution = 0.63) 
+# 
+# #assigning membership based on clusters
+# V(network_modified)$community <- membership(network_clusters)
 ```
 
 Filter method (need to watch out for same names, if possible, run everything by ID number, then switch to names at the end based on ID and name associations)
@@ -203,21 +203,33 @@ matching_test <- matching_test %>%
 matching_list <- matching_test %>% 
   group_by(name_from, full_name_from) %>% 
   arrange(desc(weight)) %>% 
-  mutate(neighbors = list(name_to), .groups = "drop")
+  summarize(neighbors = list(name_to), weights = list(weight), .groups = "drop")
 
 #adding in the top matching collaborator for each individual
 matching_list <- matching_list %>% 
   mutate(number_possible_collabs = map(neighbors, length)) %>% 
   mutate(top_neighbor = map(neighbors, first)) %>% 
+  mutate(weight = map(weights, first)) %>% 
+  unnest(weight) %>% 
   unnest(top_neighbor) %>% 
   unnest(number_possible_collabs) %>% 
   relocate(top_neighbor, .before = "neighbors")
 
+matching_list <- matching_list %>% 
+  rename(name = name_from) %>% 
+  left_join(nodes_network, by = "name") %>% 
+  select(-c(id, full_name_from)) %>% 
+  rename(id = top_neighbor) %>% 
+  left_join(nodes_network, by = "id") %>% 
+  select(-id) %>% 
+  rename_with(\(x) gsub("\\.x", "_from", x)) %>% 
+  rename_with(\(x) gsub("\\.y", "_to", x))
+
 #keeping only matches where they match to each other
 match_mates <- matching_list %>%
-  select(name_from, top_neighbor) %>% 
+  select(name_from, name_to) %>% 
   rowwise() %>%
-  mutate(pair_key = paste(sort(c(name_from, top_neighbor)), collapse = "_")) %>%
+  mutate(pair_key = paste(sort(c(name_from, name_to)), collapse = "_")) %>%
   ungroup() %>%
   group_by(pair_key) %>%
   filter(n() > 1) %>% 
@@ -227,34 +239,34 @@ match_mates <- matching_list %>%
 #join by ID and researcher name tibble with matching tibble to get the right person and the right names
 ```
 
-Visuals (to be built up for paper)
+Visuals (to be built up for paper) (not useful right now)
 
 ```{r}
 #preliminary visualization
-ggraph(network_modified, layout = "fr") +
-  geom_edge_link(alpha = 0.5) +
-  geom_node_point(aes(color = as.factor(community)), size = 3)
-
-plot(network_clusters, network_modified)
+# ggraph(network_modified, layout = "fr") +
+#   geom_edge_link(alpha = 0.5) +
+#   geom_node_point(aes(color = as.factor(community)), size = 3)
+# 
+# plot(network_clusters, network_modified)
 ```
 
 Paths or walks (of length 2) (probably won't use)
 
 ```{r}
-nodes <- V(network_modified)$name
-
-all_paths <- list()
-
-for (node in nodes) {
-  paths <- all_simple_paths(network_modified, node, cutoff = 2)
-  end_nodes <- character(0)
-  for (path in paths) {
-    path_names <- V(network_modified)$name[as.numeric(path)]
-    end_nodes <- c(end_nodes, tail(path_names, 1))
-    end_nodes <- unique(end_nodes)
-    }
-  all_paths[[node]] <- end_nodes
-}
+# nodes <- V(network_modified)$name
+# 
+# all_paths <- list()
+# 
+# for (node in nodes) {
+#   paths <- all_simple_paths(network_modified, node, cutoff = 2)
+#   end_nodes <- character(0)
+#   for (path in paths) {
+#     path_names <- V(network_modified)$name[as.numeric(path)]
+#     end_nodes <- c(end_nodes, tail(path_names, 1))
+#     end_nodes <- unique(end_nodes)
+#     }
+#   all_paths[[node]] <- end_nodes
+# }
 ```
 
 Once this list of end nodes is created, need to decide what the optimal collaboration threshold of similarity is
