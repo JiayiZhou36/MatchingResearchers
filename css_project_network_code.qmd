@@ -12,14 +12,29 @@ library(igraph)
 library(ggraph)
 library(here)
 library(ideanet)
+library(arrow)
+```
+
+Load tables
+
+```{r}
+#publications <- readRDS(here("publication_clean_df.rds"))
+coauthors <- readRDS(here("coauthor_pairs_final.rds"))
+researchers <- readRDS(here("researcher_df.rds"))
+
+researcher_embeddings <- read_feather(here("Embedding/researcher_df_with_emb_new.feather"))
+
+#loading adjacency matrix of similarity scores
+#similarity_data <- read.csv(here("Code/professor_similarity_matrix.csv"), row.names = 1)
+similarity_data <- read_feather(here("Embedding/similarity_id_df.feather"))
+similarity_data <- similarity_data %>% 
+  remove_rownames() %>% 
+  column_to_rownames(var = "researcher_id")
 ```
 
 Creating a network from an adjacency matrix of similarity scores
 
 ```{r}
-#loading adjacency matrix of similarity scores
-similarity_data <- read.csv(here("Code/professor_similarity_matrix.csv"), row.names = 1)
-
 #creating adjacency matrix
 adjacency_matrix <- as.matrix(similarity_data)
 
@@ -35,51 +50,115 @@ network <- graph_from_adjacency_matrix(adjacency_matrix, weighted = TRUE, mode =
 Adding traits to the nodes
 
 ```{r}
-# discipline <- c("Law", "Economics", "Journalism and Public Policy", "Medicine", "Radiology", "Medicine", "Medicine", 
-#                 "Obstetrics and Gynecology", "Anesthesiology", "Anesthesiology", "Neurosurgery", "Nursing","Urology",
-#                 "Neurology",  "Surgery", "Head and Neck Surgery and Communication Sciences", "Anesthesiology", 
-#                 "Medicine", "Pathology", "Art and Art History", "Orthopaedic Surgery")
-# names <- V(network)$name
-# rank <- rep(c("assistant", "associate", "professor"), 7)
+researchers_in_data <- researcher_embeddings %>% 
+  select(researcher_id) %>% 
+  left_join(researchers, by = "researcher_id")
 
-people_traits <- data.frame(names = names, discipline = discipline, ranking = rank)
+V(network)$discipline <- researchers_in_data$department_raw
+V(network)$rank <- researchers_in_data$role
+V(network)$full_name <- researchers_in_data$full_name
+V(network)$id <- V(network)$name
+```
 
-V(network)$discipline <- people_traits$discipline
-V(network)$rank <- people_traits$ranking
-V(network)$name
+Making computationally easier
+
+```{r}
+#turning the network into a tibble
+network_graph_large <- as_tbl_graph(network)
+
+#creating an edge only network
+edges_network_large <- network_graph_large %>% 
+  activate(edges) %>% 
+  as_tibble()
+
+#creating a node only network
+nodes_network_large <- network_graph_large %>% 
+  activate(nodes) %>% 
+  as_tibble()
 ```
 
 Weights
 
 ```{r}
-#checking weights
-E(network)$weight
+weights <- edges_network_large$weight
 
 #setting proximity threshold (based on sum of edge density over number of edges, so mean density)
-proximity_threshold <- (sum(E(network)$weight)/ecount(network))
+proximity_threshold <- sum(weights)/ecount(network)
+prox_thres_var <- quantile(weights, 0.9)
   
 #modifying the network to only have ties above the mean
-network_modified <- delete_edges(network, E(network)[weight < proximity_threshold])
+network_graph_modified <- network_graph_large %>% 
+  activate(edges) %>% 
+  filter(weight > prox_thres_var) 
 
-E(network_modified)$weight
-gsize(network_modified)
+# components <- components(network_graph_modified)
+count_components(network_graph_modified)
+mean(degree(network_graph_modified))
 
-#checking degrees
-degree(network_modified)
+# network_graph_modified <- network_graph_modified %>%
+#   activate(nodes) %>%
+#   mutate(component = components$membership) %>%
+#   filter(component == 1)
+# 
+# is_connected(network_graph_modified)
 
-#check the given connections of a researcher X
-neighbors(network_modified, v = "bill.adair")
+# weights <- network_graph_modified %>%
+#   activate(edges) %>%
+#   pull(weight)
+# proximity_threshold <- sum(weights)/length(weights)
+# 
+# network_graph_modified <- network_graph_modified %>%
+#   activate(edges) %>%
+#   filter(weight > proximity_threshold)
+# 
+# components <- components(network_graph_modified)
+# count_components(network_graph_modified)
+# 
+# network_graph_modified <- network_graph_modified %>%
+#   activate(nodes) %>%
+#   mutate(component = components$membership) %>%
+#   filter(component == 1)
+# 
+# is.connected(network_graph_modified)
+
+resolutions <- seq(0.1, 4, by = 0.1)
+communities_test <- c()
+modularities <- c()
+
+for(resolution in resolutions) {
+  lc_test <- cluster_louvain(network_graph_modified,
+                             weights = network_graph_modified %>% activate(edges) %>% pull(weight), 
+                             resolution = resolution)
+  modularity <- modularity(lc_test)
+  modularities <- c(modularities, modularity)
+  no_com <- max(lc_test$membership)
+  communities_test <- c(communities_test, no_com)
+}
+
+plot(resolutions, communities_test)
+plot(resolution, modularities)
+
+network_clusters <- cluster_louvain(network_graph_modified, resolution = 3)
+print(network_clusters)
+modularity(network_clusters)
+
+
+#assigning membership based on clusters
+network_graph_modified <- network_graph_modified %>%
+  activate(nodes) %>%
+  mutate(membership = membership(network_clusters))
 ```
+
 
 Clustering
 
 ```{r}
-partitions <- get_partitions(network_modified)
-
-#needs to be assigned to the same object as the partitions object
-partitions <- CHAMP(network_modified, partitions)
-
-partitions <- get_CHAMP_map(network_modified, partitions)
+# partitions <- get_partitions(network_modified)
+# 
+# #needs to be assigned to the same object as the partitions object
+# partitions <- CHAMP(network_modified, partitions)
+# 
+# partitions <- get_CHAMP_map(network_modified, partitions)
 
 #set resolution manually based on partitions object
 network_clusters <- cluster_louvain(network_modified, resolution = 0.63) 
@@ -91,16 +170,13 @@ V(network_modified)$community <- membership(network_clusters)
 Filter method (need to watch out for same names, if possible, run everything by ID number, then switch to names at the end based on ID and name associations)
 
 ```{r}
-#turning the network into a tibble
-network_graph <- as_tbl_graph(network_modified)
-
 #creating an edge only network
-edges_network <- network_graph %>% 
+edges_network <- network_graph_modified %>% 
   activate(edges) %>% 
   as_tibble()
 
 #creating a node only network
-nodes_network <- network_graph %>% 
+nodes_network <- network_graph_modified %>% 
   activate(nodes) %>% 
   as_tibble()
 
@@ -115,38 +191,35 @@ matching_tibble <- edges_network %>%
 
 #filtering out any edges that are in the same community, discipline
 matching_test <- matching_tibble %>% 
-  filter(community_from != community_to) %>% 
+  filter(membership_from != membership_to) %>% 
   filter(discipline_from != discipline_to)
 
-#previous collaborators tibble
-prev_collabs <- read.csv()
-
 #filtering out previously collaborated
-filter_test <- matching_test %>% 
-  anti_join(prev_collabs, by = c("name_from" = "names1", "name_to" = "names2")) %>% 
-  anti_join(prev_collabs, by = c("name_from" = "names2", "name_to" = "names1"))
+matching_test <- matching_test %>% 
+  anti_join(coauthors, by = c("name_from" = "researcher_A_id", "name_to" = "researcher_B_id")) %>% 
+  anti_join(coauthors, by = c("name_from" = "researcher_B_id", "name_to" = "researcher_A_id"))
 
 #generating a list of each individuals matches
 matching_list <- matching_test %>% 
-  group_by(name_from) %>% 
+  group_by(name_from, full_name_from) %>% 
   arrange(desc(weight)) %>% 
-  summarize(neighbors = list(name_to), .groups = "drop")
+  mutate(neighbors = list(name_to), .groups = "drop")
 
 #adding in the top matching collaborator for each individual
 matching_list <- matching_list %>% 
-  mutate(collab_number = map(neighbors, length)) %>% 
+  mutate(number_possible_collabs = map(neighbors, length)) %>% 
   mutate(top_neighbor = map(neighbors, first)) %>% 
   unnest(top_neighbor) %>% 
-  unnest(collab_number) %>% 
+  unnest(number_possible_collabs) %>% 
   relocate(top_neighbor, .before = "neighbors")
 
 #keeping only matches where they match to each other
 match_mates <- matching_list %>%
-  select(name_from, top_neighbor)
+  select(name_from, top_neighbor) %>% 
   rowwise() %>%
-  mutate(pair_key = paste(sort(c(names1, names2)), collapse = "_")) %>%
+  mutate(pair_key = paste(sort(c(name_from, top_neighbor)), collapse = "_")) %>%
   ungroup() %>%
-  group_by(pair_key) %>% 
+  group_by(pair_key) %>%
   filter(n() > 1) %>% 
   ungroup() %>% 
   select(-pair_key)
@@ -187,10 +260,5 @@ for (node in nodes) {
 Once this list of end nodes is created, need to decide what the optimal collaboration threshold of similarity is
 - Is path length of 2 best?
 - What should the collaboration threshold be? It should be under the similarity threshold but over another amount. - Is the edge matching threshold too low?
-
-```{r}
-?contract
-?simplify
-```
 
 
