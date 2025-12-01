@@ -16,6 +16,7 @@ print(API_TOKEN)
 GRAPHQL_ENDPOINT = "https://graphql.scholars.duke.edu/graphiql"
 HEADERS = {
     "Content-Type": "application/json",
+    "scholars_access_token": f"{API_TOKEN}",
     
 }
 
@@ -131,8 +132,8 @@ def save_json(data, filename):
 if __name__ == "__main__":
 
     # Example: get first 2 pages (use None for all 116 pages)
-    # people = fetch_all_people(max_pages=2)
-    people = fetch_all_people()
+    people = fetch_all_people(max_pages=2)
+    # people = fetch_all_people()
 
     # Generate a timestamped output file
     filename = generate_timestamped_filename(prefix="people")
