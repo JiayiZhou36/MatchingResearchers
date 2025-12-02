@@ -63,3 +63,9 @@ query PeopleWithTheirPublications {
     }}
 }
 ```
+
+## How to reproduce
+
+1. Run [`Data_Design_withdate_1125_new.ipynb`](https://github.com/JiayiZhou36/MatchingResearchers/blob/main/Data_Design_withdate_1125_new.ipynb) That should create several .rds files on the main directory.
+2. Run [`Embedding.ipynb`](https://github.com/JiayiZhou36/MatchingResearchers/blob/main/Embedding/Embedding.ipynb). This creates a similarity matrix inside the Embedding folder.
+3. Run [`css_project_network_code.qmd`](https://github.com/JiayiZhou36/MatchingResearchers/blob/main/css_project_network_code.qmd) 
