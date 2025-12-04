@@ -278,7 +278,7 @@ matching_betweenness_list <- matching_betweenness_list %>%
   rename_with(\(x) gsub("\\.x", "_from", x)) %>% 
   rename_with(\(x) gsub("\\.y", "_to", x))
 
-#keeping only matches where they match to each other (unfortunately none as of yet)
+#keeping only matches where they match to each other
 match_betweeness_mates <- matching_betweenness_list %>%
   select(name_from, name_to) %>% 
   rowwise() %>%
@@ -289,9 +289,18 @@ match_betweeness_mates <- matching_betweenness_list %>%
   ungroup() %>% 
   select(-pair_key)
 
+#perfect match full table (contains each pairing twice)
+match_betweeness_mates <- match_betweeness_mates %>% 
+  left_join(nodes_network %>% 
+              rename(name_from = name), by = "name_from") %>% 
+  left_join(nodes_network %>% 
+              rename(name_to = name), by = "name_to") %>% 
+  rename_with(\(x) gsub("\\.x", "_from", x)) %>% 
+  rename_with(\(x) gsub("\\.y", "_to", x))
+
 ```
 
-Visuals (to be built up for paper) (not useful right now)
+Visuals
 
 ```{r}
 #preliminary visualization
