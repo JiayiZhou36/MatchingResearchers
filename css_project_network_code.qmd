@@ -77,7 +77,7 @@ nodes_network_large <- network_graph_large %>%
   as_tibble()
 ```
 
-Weights
+Keeping ties based on weights and creating clustering
 
 ```{r}
 #keeping top n edges (can adjust n depending on how dense you want the network to be)
@@ -160,7 +160,7 @@ community_structure <- nodes_network %>%
 community_structure_names <- setNames(community_structure$community_name, community_structure$membership)
 ```
 
-Filter method (need to watch out for same names, if possible, run everything by ID number, then switch to names at the end based on ID and name associations)
+Filter and matching method 
 
 ```{r}
 #duplicating the network so that _to connections are accounted for (in other words because it is undirected, to and from connections are the same, so both directions need to be included, otherwise some researchers will only show up in the two column when they equally need to be analyzed as the rest of the analysis draws from the from column)
