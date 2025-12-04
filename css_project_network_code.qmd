@@ -149,16 +149,28 @@ nodes_network <- network_graph_modified %>%
   activate(nodes) %>% 
   as_tibble()
 
-#checking the communities are meaningful
+#checking the communities are meaningful (make sure same number of rows as communities, can adjust filter count)
 community_structure <- nodes_network %>% 
   group_by(membership, discipline) %>% 
   summarize(count = n()) %>% 
-  filter(count > 10)
+  filter(count > 5) %>% 
+  group_by(membership) %>% 
+  summarize(community_name = paste(discipline, collapse = " & "))
+
+community_structure_names <- setNames(community_structure$community_name, community_structure$membership)
 ```
 
 Filter method (need to watch out for same names, if possible, run everything by ID number, then switch to names at the end based on ID and name associations)
 
 ```{r}
+#duplicating the network so that _to connections are accounted for (in other words because it is undirected, to and from connections are the same, so both directions need to be included, otherwise some researchers will only show up in the two column when they equally need to be analyzed as the rest of the analysis draws from the from column)
+edges_network_2 <- edges_network %>% 
+  rename(to_2 = from) %>% 
+  rename(from = to) %>% 
+  rename(to = to_2)
+
+edges_network <- rbind(edges_network, edges_network_2)
+
 #combining the node information into the edge network
 matching_tibble <- edges_network %>% 
   left_join(nodes_network %>% 
@@ -177,6 +189,8 @@ match_filter <- matching_tibble %>%
 match_filter <- match_filter %>% 
   anti_join(coauthors, by = c("name_from" = "researcher_A_id", "name_to" = "researcher_B_id")) %>% 
   anti_join(coauthors, by = c("name_from" = "researcher_B_id", "name_to" = "researcher_A_id"))
+
+#duplicating match_filter so that the _to nodes also are accounted for
 
 #generating a list of each individuals matches (based on similarity)
 matching_similarity <- match_filter %>% 
@@ -226,6 +240,15 @@ match_similarity_mates <- matching_similarity_list %>%
   ungroup() %>% 
   select(-pair_key)
 
+#perfect match full table (contains each pairing twice)
+match_similarity_mates <- match_similarity_mates %>% 
+  left_join(nodes_network %>% 
+              rename(name_from = name), by = "name_from") %>% 
+  left_join(nodes_network %>% 
+              rename(name_to = name), by = "name_to") %>% 
+  rename_with(\(x) gsub("\\.x", "_from", x)) %>% 
+  rename_with(\(x) gsub("\\.y", "_to", x))
+
 #checking for where top betweenness and top similarity are the same
 betweenness_similarity <- matching_similarity_list %>% 
   filter(name_to == top_betw_neighbor)
@@ -272,9 +295,12 @@ Visuals (to be built up for paper) (not useful right now)
 
 ```{r}
 #preliminary visualization
-ggraph(network_graph_modified, layout = "auto") +
+network_visual <- ggraph(network_graph_modified, layout = "fr") +
   geom_edge_link(alpha = 0.1) +
   geom_node_point(aes(color = as.factor(membership)), size = 0.5)
+
+network_visual + scale_color_discrete(labels = community_structure_names) + theme(legend.text = element_text(size = 3))
+
 ```
 
 #### Code That Isn't Used
