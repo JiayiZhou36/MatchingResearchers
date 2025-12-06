@@ -15,6 +15,8 @@ library(ggraph)
 library(here)
 library(ideanet)
 library(arrow)
+library(tinytable)
+set.seed(67)
 ```
 
 Load tables
@@ -96,7 +98,8 @@ degree(network_graph_modified)
 vcount(network_graph_modified)
 gsize(network_graph_modified)
 
-#running a test of various resolutions to look at stable community sizes
+#running a test of various resolutions to look at stable community sizes (should run this section only if you want to change the resolution parameter)
+
 resolutions <- seq(0.1, 4, by = 0.05)
 communities_test <- c()
 modularities <- c()
@@ -106,13 +109,13 @@ for(resolution in resolutions) {
   mods <- c()
   for(i in 1:25) {
     lc_test <- cluster_louvain(network_graph_modified,
-                             weights = network_graph_modified %>% activate(edges) %>% pull(weight),
-                             resolution = resolution)
+                              weights = network_graph_modified %>% activate(edges) %>% pull(weight),
+                              resolution = resolution)
     mod <- modularity(lc_test)
     mods <- c(mods, mod)
     no_com <- max(lc_test$membership)
     no_coms <- c(no_coms, no_com)
-  }
+    }
   avg_com <- mean(no_coms)
   communities_test <- c(communities_test, avg_com)
   avg_mod <- mean(mods)
@@ -126,7 +129,7 @@ setNames(communities, resolutions)
 #clustering the network by Louvain with a stable resolution (can change the resolution depending on the desired fine-grainedness of the communities, and on the desired modularity)
 network_clusters <- cluster_louvain(network_graph_modified,
                                     weights = network_graph_modified %>% activate(edges) %>% pull(weight),
-                                    resolution = 3.45)
+                                    resolution = 3.1)
 print(network_clusters)
 
 #assigning membership based on clusters, adding betweenness centrality to identify high level betweenness nodes
@@ -144,10 +147,14 @@ edges_network <- network_graph_modified %>%
   activate(edges) %>% 
   as_tibble()
 
+write.csv(edges_network, here("edges_network.csv"))
+
 #creating a node only network
 nodes_network <- network_graph_modified %>% 
   activate(nodes) %>% 
   as_tibble()
+
+write.csv(nodes_network, here("nodes_network.csv"))
 
 #checking the communities are meaningful (make sure same number of rows as communities, can adjust filter count)
 community_structure <- nodes_network %>% 
@@ -231,7 +238,7 @@ matching_similarity_list <- matching_similarity_list %>%
 
 #keeping only matches where they match to each other (unfortunately none as of yet)
 match_similarity_mates <- matching_similarity_list %>%
-  select(name_from, name_to) %>% 
+  select(name_from, name_to, weight) %>% 
   rowwise() %>%
   mutate(pair_key = paste(sort(c(name_from, name_to)), collapse = "_")) %>%
   ungroup() %>%
@@ -280,7 +287,7 @@ matching_betweenness_list <- matching_betweenness_list %>%
 
 #keeping only matches where they match to each other
 match_betweeness_mates <- matching_betweenness_list %>%
-  select(name_from, name_to) %>% 
+  select(name_from, name_to, weight) %>% 
   rowwise() %>%
   mutate(pair_key = paste(sort(c(name_from, name_to)), collapse = "_")) %>%
   ungroup() %>%
@@ -297,10 +304,31 @@ match_betweeness_mates <- match_betweeness_mates %>%
               rename(name_to = name), by = "name_to") %>% 
   rename_with(\(x) gsub("\\.x", "_from", x)) %>% 
   rename_with(\(x) gsub("\\.y", "_to", x))
-
 ```
 
-Visuals
+Table output
+
+```{r}
+library(tinytable)
+library(webshot2)
+
+similarity_output <- match_similarity_mates %>% 
+  select(full_name_from, discipline_from, full_name_to, discipline_to, weight) %>% 
+  rename("Researcher 1" = full_name_from, 
+         "Researcher 2" = full_name_to,
+         "Discipline 1" = discipline_from,
+         "Discipline 2" = discipline_to,
+         "Cosine Similarity" = weight) %>% 
+  slice_sample(n = 10)
+print(similarity_output)
+
+similarity_output_tt <- tt(similarity_output)
+
+save_tt(similarity_output_tt, here("tinytable.png"), overwrite = TRUE)
+```
+
+
+Preliminary Network Visuals
 
 ```{r}
 #preliminary visualization
